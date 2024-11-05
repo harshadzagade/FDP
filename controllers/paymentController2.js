@@ -58,10 +58,11 @@ const initiatePayment = async (req, res) => {
       firstname: name,
       email,
       phone,
-      surl: "http://localhost:5000/api/success",
-      furl: "http://localhost:5000/api/failure",
+      surl: "https://fdp.met.edu/success", // Production success URL
+      furl: "https://fdp.met.edu/failure", // Production failure URL
       hash,
     };
+
 
     res.json({
       action: "https://test.payu.in/_payment",
@@ -93,8 +94,9 @@ const paymentSuccess = async (req, res) => {
     });
 
     res.redirect(
-      `http://localhost:3000/success?txnid=${txnid}&status=success&mode=${mode}&amount=${amount}&name=${firstname}&email=${email}&phone=${phone}`
+      `https://fdp.met.edu/success?txnid=${txnid}&status=success&mode=${mode}&amount=${amount}&name=${firstname}&email=${email}&phone=${phone}`
     );
+
   } catch (error) {
     console.error("Error updating payment status:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -124,8 +126,9 @@ const paymentFailure = async (req, res) => {
     });
 
     res.redirect(
-      `http://localhost:3000/failure?txnid=${txnid}&status=failed&amount=${amount}&name=${firstname}&email=${email}&phone=${phone}`
+      `https://fdp.met.edu/failure?txnid=${txnid}&status=failed&amount=${amount}&name=${firstname}&email=${email}&phone=${phone}`
     );
+
   } catch (error) {
     console.error("Error updating payment failure status:", error);
     res.status(500).json({ message: "Internal server error" });
