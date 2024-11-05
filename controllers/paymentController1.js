@@ -28,12 +28,13 @@ const initiatePayment = async (req, res) => {
       productinfo: "FDP Payment",
       firstname: name,
       email,
+      phone,
       surl: "http://localhost:5000/success", // Success URL
       furl: "http://localhost:5000/failure", // Failure URL
       salt: process.env.PAYU_SALT,
     });
 
-    // Insert a new transaction record into the database
+    // Insert a new transaction record into the database with all user fields
     await User.create({
       transaction_id: txnid,
       name,
@@ -56,8 +57,9 @@ const initiatePayment = async (req, res) => {
       productinfo: "FDP Payment",
       firstname: name,
       email,
-      surl: "http://localhost:5000/success",
-      furl: "http://localhost:5000/failure",
+      phone,
+      surl: "http://localhost:5000/api/success",
+      furl: "http://localhost:5000/api/failure",
       hash,
     };
 
@@ -74,33 +76,16 @@ const initiatePayment = async (req, res) => {
 };
 
 const paymentSuccess = async (req, res) => {
-  const { txnid, status, mode, amount, firstname, email, phone, hash } = req.body;
+  const { txnid, status, mode, amount, firstname, email, phone } = req.body;
 
   try {
-    // Validate reverse hash
-    const reverseHash = generateHash({
-      salt: process.env.PAYU_SALT,
-      key: process.env.PAYU_KEY,
-      txnid,
-      amount,
-      productinfo: "FDP Payment",
-      firstname,
-      email,
-      status,
-    }, true); // true for reverse hash
-
-    if (hash !== reverseHash) {
-      console.error("Hash mismatch in success response");
-      return res.status(400).json({ message: "Hash validation failed" });
-    }
-
-    // Update transaction status
+    // Update transaction status in the database
     await User.update(
       { status: "success", mode },
       { where: { transaction_id: txnid } }
     );
 
-    // Send success email
+    // Send success email notification
     await sendEmail({
       to: email,
       subject: "Payment Success - FDP Registration",
@@ -117,33 +102,21 @@ const paymentSuccess = async (req, res) => {
 };
 
 const paymentFailure = async (req, res) => {
-  const { txnid, status, amount, firstname, email, phone, hash } = req.body;
+  const { txnid, status, amount, firstname, email, phone } = req.body;
+
+  // if (!txnid) {
+  //   console.error("Transaction ID not found, possibly empty request body.");
+  //   return res.status(400).json({ message: "Transaction details missing." });
+  // }
 
   try {
-    // Validate reverse hash
-    const reverseHash = generateHash({
-      salt: process.env.PAYU_SALT,
-      key: process.env.PAYU_KEY,
-      txnid,
-      amount,
-      productinfo: "FDP Payment",
-      firstname,
-      email,
-      status,
-    }, true); // true for reverse hash
-
-    if (hash !== reverseHash) {
-      console.error("Hash mismatch in failure response");
-      return res.status(400).json({ message: "Hash validation failed" });
-    }
-
-    // Update transaction status
+    // Update transaction status as failed in the database
     await User.update(
       { status: "failed" },
       { where: { transaction_id: txnid } }
     );
 
-    // Send failure email
+    // Send failure email notification
     await sendEmail({
       to: email,
       subject: "Payment Failed - FDP Registration",
@@ -158,7 +131,6 @@ const paymentFailure = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 const fetchAllUsers = async (req, res) => {
   try {
