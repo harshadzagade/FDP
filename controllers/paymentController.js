@@ -64,7 +64,8 @@ const initiatePayment = async (req, res) => {
     };
 
     res.json({
-      action: "https://test.payu.in/_payment",
+      // action: "https://test.payu.in/_payment",
+      action: "https://secure.payu.in/_payment",
       params: payload,
     });
 
